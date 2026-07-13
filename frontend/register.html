@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Register new faces into the dataset">
+    <title>Register - NeuroFace AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <span class="logo-icon">👁️</span>
+            <h1>NeuroFace AI</h1>
+        </div>
+        <nav>
+            <a href="index.html" class="nav-btn">Live Recognition</a>
+            <a href="register.html" class="nav-btn active">Register New Face</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Face Registration</h2>
+                <p>Add a new individual to the recognition dataset.</p>
+            </div>
+
+            <div class="input-group">
+                <label for="personName">Person Name</label>
+                <input type="text" id="personName" placeholder="Enter full name" autocomplete="off">
+            </div>
+
+            <div class="video-container" id="videoContainer">
+                <video id="webcam" autoplay playsinline muted></video>
+                <canvas id="overlayCanvas"></canvas>
+            </div>
+            
+            <canvas id="captureCanvas"></canvas>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <div class="controls">
+                <button id="startBtn" class="primary-btn">
+                    Start Camera
+                </button>
+                <button id="captureBtn" class="primary-btn" disabled>
+                    Start Capture (1 min)
+                </button>
+                <button id="trainBtn" class="secondary-btn">
+                    Train Model
+                </button>
+            </div>
+
+            <div id="statusMsg" class="status"></div>
+        </div>
+    </main>
+
+    <script src="register.js"></script>
+</body>
+</html>

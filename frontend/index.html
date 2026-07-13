@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Real-time Face Detection and Recognition Web Application">
+    <title>Live Recognition - NeuroFace AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="socket.io.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <span class="logo-icon">👁️</span>
+            <h1>NeuroFace AI</h1>
+        </div>
+        <nav>
+            <a href="index.html" class="nav-btn active">Live Recognition</a>
+            <a href="register.html" class="nav-btn">Register New Face</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Real-Time Recognition</h2>
+                <p>Detect and identify faces instantly using deep learning.</p>
+            </div>
+
+            <div class="video-container" id="videoContainer">
+                <video id="webcam" autoplay playsinline muted></video>
+                <canvas id="overlayCanvas"></canvas>
+                <div id="statsOverlay">FPS: 0</div>
+            </div>
+            
+            <canvas id="captureCanvas"></canvas>
+
+            <div class="controls">
+                <button id="startBtn" class="primary-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    Start Camera
+                </button>
+                <button id="stopBtn" class="secondary-btn" disabled>Stop</button>
+            </div>
+
+            <div id="statusMsg" class="status"></div>
+        </div>
+    </main>
+
+    <script src="detect.js"></script>
+</body>
+</html>
