@@ -1,6 +1,9 @@
 Flask
 Flask-Cors
+Flask-SocketIO
 numpy
+opencv-python-headless
 torch
 torchvision
+facenet-pytorch
 scikit-learn
