@@ -25,6 +25,10 @@ db_path = os.path.join(base_dir, 'embeddings', 'embeddings.pkl')
 
 app = Flask(__name__, static_folder=frontend_dir)
 CORS(app)
+
+from backend.routes.register_face import register_bp
+app.register_blueprint(register_bp, url_prefix='/api')
+
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Serve frontend files
