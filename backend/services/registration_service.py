@@ -5,7 +5,9 @@ from backend.models.face_detector import FaceDetector
 
 class RegistrationService:
     def __init__(self):
-        self.dataset_path = 'dataset'
+        # Resolve dataset path relative to the project root
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.dataset_path = os.path.join(base_dir, 'dataset')
         self.detector = FaceDetector()
         
     def save_registration_frame(self, name, frame_bgr):
@@ -31,7 +33,9 @@ class RegistrationService:
             
         face_crop = crops[0]
         
-        img_path = os.path.join(person_dir, f"{name}.jpg")
+        # Save image with timestamp to avoid overwrites
+        timestamp = int(time.time() * 1000)
+        img_path = os.path.join(person_dir, f"{timestamp}.jpg")
         cv2.imwrite(img_path, face_crop)
         
         return {"status": "success", "message": "Face saved successfully"}
