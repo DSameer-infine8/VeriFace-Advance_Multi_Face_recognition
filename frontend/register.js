@@ -8,7 +8,10 @@ const statusMsg = document.getElementById('statusMsg');
 const personNameInput = document.getElementById('personName');
 const progressContainer = document.getElementById('progressContainer');
 const progressBar = document.getElementById('progressBar');
+const overlayCanvas = document.getElementById('overlayCanvas');
+const overlayCtx = overlayCanvas.getContext('2d');
 
+let socket = null;
 let stream = null;
 let captureInterval = null;
 // As per requirement: capture for 1 minute every 0.5s
@@ -33,15 +36,83 @@ async function startCamera() {
         video.onloadedmetadata = () => {
             captureCanvas.width = video.videoWidth;
             captureCanvas.height = video.videoHeight;
+            overlayCanvas.width = video.videoWidth;
+            overlayCanvas.height = video.videoHeight;
             
             startBtn.disabled = true;
             captureBtn.disabled = false;
             showStatus("Camera started. Enter name and click Start Capture.", "info");
+            
+            connectSocket();
         };
     } catch (err) {
         console.error("Error accessing webcam:", err);
         showStatus("Could not access webcam. Please allow permissions.", "error");
     }
+}
+
+let isDetecting = false;
+
+function connectSocket() {
+    socket = io();
+    
+    socket.on('connect', () => {
+        isDetecting = false;
+        processDetectionFrame();
+    });
+    
+    socket.on('disconnect', () => {
+        // Handle disconnect if needed
+    });
+    
+    socket.on('detection_results', (data) => {
+        drawDetectionBoxes(data.boxes);
+        isDetecting = false;
+        requestAnimationFrame(processDetectionFrame);
+    });
+}
+
+function processDetectionFrame() {
+    if (!stream || !socket || !socket.connected) return;
+    
+    if (video.readyState === video.HAVE_ENOUGH_DATA && !isDetecting) {
+        isDetecting = true;
+        
+        if (captureCanvas.width !== video.videoWidth) {
+            captureCanvas.width = video.videoWidth;
+            captureCanvas.height = video.videoHeight;
+        }
+        
+        captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+        const imageData = captureCanvas.toDataURL('image/jpeg', 0.6);
+        
+        socket.emit('detect_face_only', { image: imageData });
+    } else if (!isDetecting) {
+        requestAnimationFrame(processDetectionFrame);
+    }
+}
+
+function drawDetectionBoxes(boxes) {
+    if (overlayCanvas.width !== video.videoWidth && video.videoWidth > 0) {
+        overlayCanvas.width = video.videoWidth;
+        overlayCanvas.height = video.videoHeight;
+    }
+    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    
+    if (!boxes || boxes.length === 0) return;
+    
+    boxes.forEach(box => {
+        const [x1, y1, x2, y2] = box;
+        const width = x2 - x1;
+        const height = y2 - y1;
+        
+        // Mirror horizontally
+        const mirroredX = overlayCanvas.width - x2;
+        
+        overlayCtx.strokeStyle = '#2ed573';
+        overlayCtx.lineWidth = 3;
+        overlayCtx.strokeRect(mirroredX, y1, width, height);
+    });
 }
 
 async function startCapture() {

@@ -65,6 +65,25 @@ def handle_detect_face_only(data):
             print(f"Error during face detection: {e}")
             emit('detection_results', {'boxes': []})
 
+@socketio.on('process_frame')
+def handle_process_frame(data):
+    image_b64 = data.get('image')
+    if image_b64:
+        try:
+            img_bgr = get_bgr_from_base64(image_b64)
+            boxes, probs = face_detector.detect_faces(img_bgr)
+            faces = []
+            for box in boxes:
+                faces.append({
+                    'box': box.tolist(),
+                    'name': 'Unknown',
+                    'similarity': 0.0
+                })
+            emit('recognition_results', {'faces': faces})
+        except Exception as e:
+            print(f"Error during face processing: {e}")
+            emit('recognition_results', {'faces': []})
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
     
