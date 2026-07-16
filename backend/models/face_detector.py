@@ -49,23 +49,28 @@ class FaceDetector:
             
         return boxes, probs
 
-    def crop_faces(self, image_bgr, boxes, margin=20):
+    def crop_faces(self, image_bgr, boxes):
         """
-        Crop faces from an image given bounding boxes.
+        Crop faces from the image given bounding boxes.
+        Returns:
+            list of cropped face images in BGR format
         """
         crops = []
-        h, w, _ = image_bgr.shape
+        if boxes is None or len(boxes) == 0:
+            return crops
+            
         for box in boxes:
             x1, y1, x2, y2 = [int(b) for b in box]
             
-            # Add margin
-            x1 = max(0, x1 - margin)
-            y1 = max(0, y1 - margin)
-            x2 = min(w, x2 + margin)
-            y2 = min(h, y2 + margin)
+            # Ensure coordinates are within image boundaries
+            x1 = max(0, x1)
+            y1 = max(0, y1)
+            x2 = min(image_bgr.shape[1], x2)
+            y2 = min(image_bgr.shape[0], y2)
             
+            # Crop the face
             crop = image_bgr[y1:y2, x1:x2]
-            if crop.size != 0:
+            if crop.size > 0:
                 crops.append(crop)
                 
         return crops

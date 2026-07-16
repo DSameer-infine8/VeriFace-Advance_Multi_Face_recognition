@@ -13,10 +13,13 @@ from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from flask import Flask, render_template, send_from_directory
 from backend.models.face_detector import FaceDetector
+from backend.database.db import Database
+from backend.routes.register_face import get_register_blueprint
+from backend.routes.recognize_face import get_recognize_blueprint, get_bgr_from_base64
 
 face_detector = FaceDetector()
 
-
+print(get_register_blueprint)
 
 # Define paths
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,11 +28,21 @@ db_path = os.path.join(base_dir, 'embeddings', 'embeddings.pkl')
 
 app = Flask(__name__, static_folder=frontend_dir)
 CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Initialize database
+db = Database(db_path)
+
+# Register blueprints
+register_bp = get_register_blueprint(db)
+recognize_bp, rec_service = get_recognize_blueprint(db)
+
+
 
 from backend.routes.register_face import register_bp
 app.register_blueprint(register_bp, url_prefix='/api')
+app.register_blueprint(recognize_bp, url_prefix='/api')
 
-socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Serve frontend files
 @app.route('/')
@@ -38,54 +51,25 @@ def index():
 
 @app.route('/<path:path>')
 def static_files(path):
-    return send_from_directory(frontend_dir, path)
+    if os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    return send_from_directory(app.static_folder, 'index.html')
 
-def get_bgr_from_base64(b64_string):
-    if ',' in b64_string:
-        b64_string = b64_string.split(',')[1]
-    nparr = np.frombuffer(base64.b64decode(b64_string), np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    return img
 
-# Socket.IO event for real-time face detection ONLY (used during registration)
-@socketio.on('detect_face_only')
-def handle_detect_face_only(data):
-    image_b64 = data.get('image')
-    if image_b64:
-        try:
-            # Convert base64 string to BGR image format using your existing helper
-            img_bgr = get_bgr_from_base64(image_b64)
-            
-            # Detect faces using the FaceDetector
-            boxes, probs = face_detector.detect_faces(img_bgr)
-            
-            # Convert numpy arrays to lists for JSON serialization
-            boxes_list = [box.tolist() for box in boxes] if len(boxes) > 0 else []
-            
-            # Emit the bounding boxes back to the frontend
-            emit('detection_results', {'boxes': boxes_list})
-            
-        except Exception as e:
-            print(f"Error during face detection: {e}")
-            emit('detection_results', {'boxes': []})
-
+# Socket.IO event for real-time recognition
 @socketio.on('process_frame')
 def handle_process_frame(data):
     image_b64 = data.get('image')
     if image_b64:
         try:
             img_bgr = get_bgr_from_base64(image_b64)
-            boxes, probs = face_detector.detect_faces(img_bgr)
-            faces = []
-            for box in boxes:
-                faces.append({
-                    'box': box.tolist(),
-                    'name': 'Unknown',
-                    'similarity': 0.0
-                })
-            emit('recognition_results', {'faces': faces})
+            results = rec_service.recognize_faces_in_frame(img_bgr)
+            emit('recognition_results', {'faces': results})
         except Exception as e:
-            print(f"Error during face processing: {e}")
+            print(f"Error processing frame via socketio: {e}")
+            with open("error_log.txt", "a") as f:
+                import traceback
+                f.write(traceback.format_exc() + "\\n")
             emit('recognition_results', {'faces': []})
 
 if __name__ == "__main__":

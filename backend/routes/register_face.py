@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from backend.services.registration_service import RegistrationService
+from backend.services.embedding_service import EmbeddingService
 import cv2
 import numpy as np
 import base64
@@ -29,3 +30,16 @@ def register_face():
     img_bgr = get_bgr_from_base64(image_b64)
     result = reg_service.save_registration_frame(name, img_bgr)
     return jsonify(result)
+
+def get_register_blueprint(db):
+    emb_service = EmbeddingService(db)
+    
+    @register_bp.route('/generate-embeddings', methods=['POST'])
+    def generate_embeddings():
+        """
+        Generates embeddings for all images in the dataset folder.
+        """
+        result = emb_service.generate_embeddings_from_dataset()
+        return jsonify(result)
+        
+    return register_bp
