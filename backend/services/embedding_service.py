@@ -10,6 +10,7 @@ class EmbeddingService:
         self.db = db
         self.detector = FaceDetector()
         self.embedder = FaceEmbedder()
+        #self.dataset_path = 'dataset'
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         self.dataset_path = os.path.join(base_dir, 'dataset')
 
