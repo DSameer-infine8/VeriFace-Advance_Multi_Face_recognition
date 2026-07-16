@@ -42,4 +42,12 @@ def get_register_blueprint(db):
         result = emb_service.generate_embeddings_from_dataset()
         return jsonify(result)
         
+    @register_bp.route('/registered-faces', methods=['GET'])
+    def get_registered_faces():
+        """
+        Returns a list of all registered face names.
+        """
+        names = list(db.embeddings.keys())
+        return jsonify({"status": "success", "faces": names})
+        
     return register_bp

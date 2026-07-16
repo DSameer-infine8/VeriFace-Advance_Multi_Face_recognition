@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Register new faces into the dataset">
-    <title>Register - NeuroFace AI</title>
+    <title>Register - VeriFace AI</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -13,8 +13,8 @@
 <body>
     <header>
         <div class="logo-container">
-            <span class="logo-icon"><img class="logo" src='./VeriFaceAI_logo.png'></span>
-            <h1>NeuroFace AI</h1>
+            <span class="logo-icon"><img class="logo" src='./VeriFaceAI_logo.png'> </span>
+            <h1>VeriFace AI</h1>
         </div>
         <nav>
             <a href="index.html" class="nav-btn">Live Recognition</a>
@@ -22,8 +22,8 @@
         </nav>
     </header>
 
-    <main>
-        <div class="panel">
+    <main class="register-layout">
+        <div class="panel form-panel">
             <div class="panel-header">
                 <h2>Face Registration</h2>
                 <p>Add a new individual to the recognition dataset.</p>
@@ -59,9 +59,27 @@
 
             <div id="statusMsg" class="status"></div>
         </div>
+
+        <div class="panel table-panel">
+            <div class="panel-header">
+                <h2>Registered Faces</h2>
+            </div>
+            <table class="faces-table">
+                <thead>
+                    <tr>
+                        <th>S.No</th>
+                        <th>Name</th>
+                    </tr>
+                </thead>
+                <tbody id="facesTableBody">
+                    <tr>
+                        <td colspan="2" style="text-align:center;">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </main>
 
-    <script src="socket.io.min.js"></script>
     <script src="register.js"></script>
 </body>
 

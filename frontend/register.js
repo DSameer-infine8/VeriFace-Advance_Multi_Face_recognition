@@ -8,6 +8,7 @@ const statusMsg = document.getElementById('statusMsg');
 const personNameInput = document.getElementById('personName');
 const progressContainer = document.getElementById('progressContainer');
 const progressBar = document.getElementById('progressBar');
+const facesTableBody = document.getElementById('facesTableBody');
 
 let stream = null;
 let captureInterval = null;
@@ -21,6 +22,37 @@ function showStatus(msg, type) {
     statusMsg.textContent = msg;
     statusMsg.className = `status ${type}`;
     statusMsg.style.display = 'block';
+}
+
+async function fetchRegisteredFaces() {
+    try {
+        const response = await fetch('/api/registered-faces');
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            facesTableBody.innerHTML = ''; // Clear table
+            const uniqueFaces = [...new Set(data.faces)];
+            if (uniqueFaces.length === 0) {
+                facesTableBody.innerHTML = '<tr><td colspan="2" style="text-align:center;">No faces registered yet.</td></tr>';
+                return;
+            }
+
+            uniqueFaces.forEach((name, index) => {
+                const tr = document.createElement('tr');
+                const tdSno = document.createElement('td');
+                tdSno.textContent = index + 1;
+                const tdName = document.createElement('td');
+                tdName.textContent = name;
+
+                tr.appendChild(tdSno);
+                tr.appendChild(tdName);
+                facesTableBody.appendChild(tr);
+            });
+        }
+    } catch (err) {
+        console.error("Failed to fetch registered faces:", err);
+        facesTableBody.innerHTML = '<tr><td colspan="2" style="text-align:center; color: #ff4757;">Failed to load faces.</td></tr>';
+    }
 }
 
 async function startCamera() {
@@ -106,6 +138,7 @@ async function trainModel() {
         if (data.status === 'success') {
             showStatus(`Training successful! ${data.message}. You can now go to Live Recognition.`, "success");
             trainBtn.textContent = "Model Trained ✓";
+            fetchRegisteredFaces(); // Update the table after successful training
         } else {
             showStatus(`Training failed: ${data.message}`, "error");
             trainBtn.disabled = false;
@@ -121,3 +154,5 @@ startBtn.addEventListener('click', startCamera);
 captureBtn.addEventListener('click', startCapture);
 trainBtn.addEventListener('click', trainModel);
 
+// Fetch on load
+document.addEventListener('DOMContentLoaded', fetchRegisteredFaces);
