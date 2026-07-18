@@ -48,7 +48,7 @@ class FaceDetector:
         boxes = boxes / scale
             
         return boxes, probs
-
+        
     def crop_faces(self, image_bgr, boxes):
         """
         Crop faces from the image given bounding boxes.
