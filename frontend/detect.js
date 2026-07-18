@@ -11,8 +11,10 @@ const statsOverlay = document.getElementById('statsOverlay');
 const attendanceDate = document.getElementById('attendanceDate');
 const attendanceTableBody = document.getElementById('attendanceTableBody');
 const saveCsvBtn = document.getElementById('saveCsvBtn');
+const attendanceCheckbox = document.getElementById('attendanceCheckbox');
+const tablePanel = document.querySelector('.table-panel');
 
-let attendanceData = {}; // { 'Name': { status: 'Absent', time: '-', proof: null } }
+let attendanceData = {}; // { 'Name': { status: 'Absent', time: '-', proof: null, blinkCount: 0, lastBlink: false } }
 let todayDateString = '';
 
 let stream = null;
@@ -172,39 +174,53 @@ function drawResults(faces) {
         overlayCtx.fillText(text, mirroredX + 5, textY + 18);
 
         // --- Attendance Logic ---
-        if (name !== "Unknown") {
-            markAttendance(name, face.box);
+        if (name !== "Unknown" && attendanceCheckbox.checked) {
+            markAttendance(name, face.box, face.is_blinking);
         }
     });
 }
 
-function markAttendance(name, box) {
+function markAttendance(name, box, is_blinking) {
     if (attendanceData[name] && attendanceData[name].status === 'Absent') {
-        const [x1, y1, x2, y2] = box;
-        // Ensure coordinates are within canvas bounds
-        const startX = Math.max(0, x1);
-        const startY = Math.max(0, y1);
-        const width = Math.min(captureCanvas.width - startX, x2 - x1);
-        const height = Math.min(captureCanvas.height - startY, y2 - y1);
+        // Blink logic
+        let wasBlinking = attendanceData[name].lastBlink;
+        if (is_blinking && !wasBlinking) {
+            // Blink transition from open to close
+            attendanceData[name].blinkCount += 1;
+        }
+        attendanceData[name].lastBlink = is_blinking;
 
-        // Create a temporary canvas to extract the crop
-        const cropCanvas = document.createElement('canvas');
-        cropCanvas.width = width;
-        cropCanvas.height = height;
-        const cropCtx = cropCanvas.getContext('2d');
+        // Show blink progress
+        showStatus(`${name} recognized. Blinks: ${attendanceData[name].blinkCount}/3`, "info");
 
-        if (width > 0 && height > 0) {
-            cropCtx.drawImage(captureCanvas, startX, startY, width, height, 0, 0, width, height);
-            const proofDataUrl = cropCanvas.toDataURL('image/jpeg', 0.8);
+        if (attendanceData[name].blinkCount >= 3) {
+            const [x1, y1, x2, y2] = box;
+            // Ensure coordinates are within canvas bounds
+            const startX = Math.max(0, x1);
+            const startY = Math.max(0, y1);
+            const width = Math.min(captureCanvas.width - startX, x2 - x1);
+            const height = Math.min(captureCanvas.height - startY, y2 - y1);
 
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            // Create a temporary canvas to extract the crop
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = width;
+            cropCanvas.height = height;
+            const cropCtx = cropCanvas.getContext('2d');
 
-            attendanceData[name].status = 'Present';
-            attendanceData[name].time = timeStr;
-            attendanceData[name].proof = proofDataUrl;
+            if (width > 0 && height > 0) {
+                cropCtx.drawImage(captureCanvas, startX, startY, width, height, 0, 0, width, height);
+                const proofDataUrl = cropCanvas.toDataURL('image/jpeg', 0.8);
 
-            renderAttendanceTable();
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                attendanceData[name].status = 'Present';
+                attendanceData[name].time = timeStr;
+                attendanceData[name].proof = proofDataUrl;
+
+                showStatus(`Attendance marked for ${name}!`, "success");
+                renderAttendanceTable();
+            }
         }
     }
 }
@@ -227,7 +243,7 @@ async function initializeAttendance() {
             const uniqueFaces = [...new Set(data.faces)];
             attendanceData = {};
             uniqueFaces.forEach(name => {
-                attendanceData[name] = { status: 'Absent', time: '-', proof: null };
+                attendanceData[name] = { status: 'Absent', time: '-', proof: null, blinkCount: 0, lastBlink: false };
             });
             renderAttendanceTable();
         }
@@ -327,4 +343,16 @@ startBtn.addEventListener('click', startCamera);
 stopBtn.addEventListener('click', stopCamera);
 saveCsvBtn.addEventListener('click', downloadCsv);
 
-document.addEventListener('DOMContentLoaded', initializeAttendance);
+attendanceCheckbox.addEventListener('change', (e) => {
+    if (e.target.checked) {
+        tablePanel.classList.remove('collapsed');
+    } else {
+        tablePanel.classList.add('collapsed');
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    tablePanel.classList.add('collapsed');
+    attendanceCheckbox.checked = false;
+    initializeAttendance();
+});

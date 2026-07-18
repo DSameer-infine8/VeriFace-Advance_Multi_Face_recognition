@@ -2,16 +2,19 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from backend.models.face_detector import FaceDetector
 from backend.models.facenet_model import FaceEmbedder
+from backend.models.blink_detector import BlinkDetector
 from backend.database.db import Database
+import cv2
 
 class RecognitionService:
     def __init__(self, db: Database):
         self.db = db
         self.detector = FaceDetector()
         self.embedder = FaceEmbedder()
+        self.blink_detector = BlinkDetector()
         # Cosine similarity threshold for FaceNet vggface2 model.
         # Ranges from -1 to 1. Higher means more similar.
-        self.threshold = 0.6 
+        self.threshold = 0.8
 
     def recognize_faces_in_frame(self, frame_bgr):
         """
@@ -24,6 +27,14 @@ class RecognitionService:
         boxes, probs = self.detector.detect_faces(frame_bgr)
         if len(boxes) == 0:
             return results
+            
+        # Run blink detection on the whole frame
+        try:
+            frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+            blinking_faces = self.blink_detector.detect_blinks(frame_rgb)
+        except Exception as e:
+            print(f"Blink detection error: {e}")
+            blinking_faces = []
             
         # 2. Crop faces
         crops = self.detector.crop_faces(frame_bgr, boxes)
@@ -51,10 +62,22 @@ class RecognitionService:
                 if max_sim >= self.threshold:
                     name = db_names[max_idx]
                     
+            # Determine if this specific face is blinking by checking center point distance
+            is_blinking = False
+            box_cx = (box[0] + box[2]) / 2
+            box_cy = (box[1] + box[3]) / 2
+            
+            for b_face in blinking_faces:
+                cx, cy = b_face["center"]
+                if box[0] <= cx <= box[2] and box[1] <= cy <= box[3]:
+                    is_blinking = b_face["is_blinking"]
+                    break
+
             results.append({
                 "name": name,
                 "box": box,
-                "similarity": float(max_sim) if live_emb is not None and has_db else 0.0
+                "similarity": float(max_sim) if live_emb is not None and has_db else 0.0,
+                "is_blinking": is_blinking
             })
             
         return results

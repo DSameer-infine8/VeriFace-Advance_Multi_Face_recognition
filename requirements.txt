@@ -7,3 +7,4 @@ torch
 torchvision
 facenet-pytorch
 scikit-learn
+mediapipe==0.10.14
